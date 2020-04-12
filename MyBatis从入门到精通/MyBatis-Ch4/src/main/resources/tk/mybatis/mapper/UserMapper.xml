@@ -1,0 +1,354 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 当Mapper接口和XML文件关联的时候，命名空间namespace的值需要配置成接口的全限定类名。
+        MyBatis内部就是通过这个值将接口和XML关联起来的-->
+<!-- 注意：只使用XML而不使用接口时，namespace可以设置为任意不重复名称 -->
+<mapper namespace="tk.mybatis.mapper.UserMapper">
+    <!-- 使用resultMap标签配置Java对象的属性和查询结果列的对应关系 -->
+    <!-- id属性为配置方法的名称，type为映射到的Java对象类型 -->
+    <resultMap id="userMap" type="sysUser">
+        <!-- id标签标记出作为 ID 的结果可以帮助提高整体性能，一般用在主键 -->
+        <id property="id" column="id"/>
+        <!-- result标签：普通映射 -->
+        <result property="userName" column="user_name" jdbcType="VARCHAR"/>
+        <!-- property 映射到Java对象的哪个属性， column 数据库中得到的列名或列的别名，
+         jdbcType 用于指定JDBC获取的类型-->
+        <result property="userPassword" column="user_password"/>
+        <result property="userEmail" column="user_email"/>
+        <result property="userInfo" column="user_info" jdbcType="BLOB"/>
+        <result property="headImg" column="head_img" />
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!-- MyBatis通过id属性与对应接口的方法名称一致的方式将接口方法与XML中定义的SQL语句关联到一起 -->
+    <!-- 注意：id属性不可重复-->
+    <!-- select标签映射查询语句，resultMap属性用于设置使用什么resultMap配置 -->
+    <!-- select * from sys_user where id = #{id} 为查询语句 -->
+    <!-- #{id} 预编译参数，id为参数名 -->
+    <select id="selectById" resultMap="userMap">
+        select * from sys_user where id = #{id}
+    </select>
+
+    <!-- resultType指定了对应的映射Java对象,为列名设置与Java对象属性一致的别名来完成自动映射 -->
+    <select id="selectAll" resultType="sysUser">
+        select id,
+            user_name userName,
+            user_password userPassword,
+            user_email userEmail,
+            user_info userInfo,
+            head_img headImg,
+            create_time createTime
+         from sys_user
+    </select>
+
+
+    <!-- 此操作涉及三个表，但只需返回一个表 -->
+    <select id="selectRoleByUserId" resultType="sysRole">
+        select
+            r.id,
+            r.role_name roleName,
+            r.enabled,
+            r.create_by createBy,
+            r.create_time createTime
+        from sys_user u
+        inner join sys_user_role ur on u.id = ur.user_id
+        inner join sys_role r on ur.role_id = r.id
+        where u.id = #{userId}
+    </select>
+
+    <!-- 当需要返回多个表时，
+    第一种方法是新建一个类，这个类里面包括了所有要返回的值，直接使用resultType返回此类即可。
+    第二种方法是在原有类中添加需要返回的其他对象属性。在此以第二张方法为例：
+     -->
+    <!--            u.user_name as "user.userName"
+                    u.user_email as "user.userEmail"
+                    设置别名的同时直接把sys_user中user_email列的值直接赋给SysRole中的user对象中的userName对象
+                    -->
+    <select id="selectRoleAndUserByUserId" resultType="sysRole">
+        select
+            r.id,
+            r.role_name roleName,
+            r.enabled,
+            r.create_by createBy,
+            r.create_time createTime,
+            u.user_name as "user.userName",
+            u.user_email as "user.userEmail"
+        from sys_user u
+        inner join sys_user_role ur on u.id = ur.user_id
+        inner join sys_role r on ur.role_id = r.id
+        where u.id = #{userId}
+    </select>
+
+    <!-- jdbcType:在Java中一般使用java.util.Date类型，为了保证数据类型的正确，
+    需要手动指定数据库中的数据类型（DATE，TIME，TIMESTAMP） -->
+    <insert id="insert">
+        insert into sys_user(
+        id, user_name, user_password, user_email, user_info, head_img, create_time
+        )
+        values (
+        #{id}, #{userName}, #{userPassword}, #{userEmail}, #{userInfo}, #{headImg, jdbcType=BLOB},
+        #{createTime, jdbcType=TIMESTAMP}
+        )
+    </insert>
+
+    <!-- 使用JDBC方式得到插入的主键 -->
+    <!-- useGeneratedKeys设置为true后，MyBatis会使用JDBC的useGeneratedKeys方法取出数据库内部生成的主键 -->
+    <!-- 获得主键后将其赋值给keyProperty配置的Java对象的属性(多个值用逗号隔开，且还需设置keyColumn属性按顺序指定数据库的列) -->
+    <insert id="insertAndGetKey_1" useGeneratedKeys="true" keyProperty="id">
+        insert into sys_user(
+        user_name, user_password, user_email, user_info, head_img, create_time
+        )
+        values (
+        #{userName}, #{userPassword}, #{userEmail}, #{userInfo}, #{headImg, jdbcType=BLOB},
+        #{createTime, jdbcType=TIMESTAMP}
+        )
+    </insert>
+
+    <!-- 使用<selectKey>得到主键 -->
+    <!-- keyColumn、resultType、keyProperty这些属性的用法含义与上面说的相同 -->
+    <!-- 注意的是order属性的值在MySql中要设置为AFTER，因为只有在插入成功后当前需要的值才能获取到 -->
+    <!-- 在Oracle中要设置为BEFORE，因为Oracle要先从序列获取值，然后将值作为主键插入到数据库中 -->
+    <!-- select last_insert_id()为独立的SQL语句，用于获取数据库中最后插入数据的ID值 -->
+    <insert id="insertAndGetKey_2">
+        insert into sys_user(
+        user_name, user_password, user_email, user_info, head_img, create_time
+        )
+        values (
+        #{userName}, #{userPassword}, #{userEmail}, #{userInfo}, #{headImg, jdbcType=BLOB},
+        #{createTime, jdbcType=TIMESTAMP}
+        )
+        <selectKey keyColumn="id" resultType="long" keyProperty="id" order="AFTER">
+            select last_insert_id()
+        </selectKey>
+    </insert>
+
+    <update id="updateById">
+        update sys_user
+        set user_name = #{userName},
+            user_password = #{userPassword},
+            user_email = #{userEmail},
+            user_info = #{userInfo},
+            head_img = #{headImg, jdbcType=TIMESTAMP}
+        where id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        delete from sys_user where id = #{id}
+    </delete>
+
+    <select id="selectRoleByUserIdAndRoleEnabled"
+            resultType="sysRole">
+        select
+            r.id,
+            r.role_name roleName,
+            r.enabled,
+            r.create_by createBy,
+            r.create_time createTime
+            from sys_user u
+            inner join sys_user_role ur on u.id = ur.user_id
+            inner join sys_role r on ur.role_id = r.id
+            where u.id = #{userId} and r.enabled = #{enabled}
+    </select>
+
+    <select id="selectRoleByUserIdAndRoleEnabled_Bean"
+            resultType="sysRole">
+            select
+            r.id,
+            r.role_name roleName,
+            r.enabled,
+            r.create_by createBy,
+            r.create_time createTime
+            from sys_user u
+            inner join sys_user_role ur on u.id = ur.user_id
+            inner join sys_role r on ur.role_id = r.id
+            where u.id = #{user.id} and r.enabled = #{role.enabled}
+    </select>
+
+    <!-- <if>标签中的test为必填属性，用于填写符合OGNL要求的判断表达式 -->
+    <!-- where中的 1 = 1是为了当两个if标签都不满足时仍然符合Sql语句规范 -->
+    <!-- 注意concat('%', #{userName}, '%')中的拼接 -->
+    <!--<select id="dynamicSelectByUser" resultType="sysUser">
+        select id,
+        user_name userName,
+        user_password userPassword,
+        user_email userEmail,
+        user_info userInfo,
+        head_img headImg,
+        create_time createTime
+        from sys_user
+        where 1 = 1
+        <if test="userName != null and userName != '' ">
+            and user_name like concat('%', #{userName}, '%')
+        </if>
+        <if test="userEmail != null and userEmail != ''">
+            and user_email = #{userEmail}
+        </if>
+    </select>-->
+    <!-- 在这里我们使用更为简洁的where标签,可以有效避免出现 where 1 = 1 这种情况 -->
+    <!-- 使用bind标签来封装OGNL表达式 -->
+    <select id="dynamicSelectByUser" resultType="sysUser">
+        select id,
+        user_name userName,
+        user_password userPassword,
+        user_email userEmail,
+        user_info userInfo,
+        head_img headImg,
+        create_time createTime
+        from sys_user
+        <where>
+        <if test="userName != null and userName != '' ">
+            <bind name="userNameLike" value="'%', #{userName}, '%'"/>
+            and user_name like #{userNameLike}
+        </if>
+        <if test="userEmail != null and userEmail != ''">
+            and user_email = #{userEmail}
+        </if>
+        </where>
+    </select>
+
+    <!-- 注意if标签里面的Sql语句后都有一个逗号，set里面的id = #{id}是为了保证if都不满足时Sql的语法要求， -->
+    <!--<update id="dynamicUpdateByIdSelective">
+        update sys_user
+        set
+            <if test="userName != null and userName != ''">
+                user_name = #{userName},
+            </if>
+            <if test="userPassword != null and userPassword != ''">
+                user_password = #{userPassword},
+            </if>
+            <if test="userEmail != null and userEmail != ''">
+                user_email = #{userEmail},
+            </if>
+            <if test="userInfo != null and userInfo != ''">
+                user_info = #{userInfo},
+            </if>
+            <if test="headImg != null">
+                head_img = #{headImg, jdbcType=BLOB},
+            </if>
+            <if test="createTime != null">
+                create_time =#{createTime, jdbcType=TIMESTAMP},
+            </if>
+            id = #{id}
+            where id = #{id}
+    </update>-->
+    <!-- 在这里我们使用set标签来帮助我们剔除<if>标签中不必要的逗号,。
+    但是，where语句中如果所有的if都不满足条件，则仍会出发Sql语法错误，因此id = #{id} 这条语句是必要的-->
+    <update id="dynamicUpdateByIdSelective">
+        update sys_user
+        <set>
+            <if test="userName != null and userName != ''">
+                user_name = #{userName},
+            </if>
+            <if test="userPassword != null and userPassword != ''">
+                user_password = #{userPassword},
+            </if>
+            <if test="userEmail != null and userEmail != ''">
+                user_email = #{userEmail},
+            </if>
+            <if test="userInfo != null and userInfo != ''">
+                user_info = #{userInfo},
+            </if>
+            <if test="headImg != null">
+                head_img = #{headImg, jdbcType=BLOB},
+            </if>
+            <if test="createTime != null">
+                create_time =#{createTime, jdbcType=TIMESTAMP},
+            </if>
+            id = #{id}
+        </set>
+        where id = #{id}
+    </update>
+    <!-- 注意set与where标签都可以使用<trim>标签来代替
+     where 元素等价的自定义 trim 元素为 <trim prefix="WHERE" prefixOverrides="AND |OR ">
+      set 元素等价的自定义 trim 元素为 <trim prefix="SET" suffixOverrides=",">-->
+
+    <insert id="dynamicInsert" useGeneratedKeys="true" keyProperty="id">
+        insert into sys_user(
+        user_name, user_password,
+        <if test="userEmail != null and userEmail != ''">
+            user_email
+        </if>
+        user_info, head_img, create_time
+        )
+        values (
+        #{userName}, #{userPassword},
+        <if test="userEmail != null and userEmail != ''">
+            #{userEmail}
+        </if>
+        #{userInfo}, #{headImg, jdbcType= BLOB},
+        #{createTime, jdbcType= TIMESTAMP}
+        )
+    </insert>
+
+    <!-- choose只会选择标签中的一个when或otherwise -->
+    <select id="dynamicSelectByIdOrUserName" resultType="sysUser" resultMap="userMap">
+        select * from sys_user where 1 = 1
+        <choose>
+            <when test="id != null">
+                and id = #{id}
+            </when>
+            <when test="userName != null and userName != ''">
+                and user_name = #{userName}
+            </when>
+            <otherwise>
+                and 1 = 2
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- collection：要迭代循环的集合的属性名(MyBaits会自动把属性值与集合元素封装为Map。属性值为Key，集合元素为value
+    当使用多个集合为参数时，使用@param注解Key值,集合必须实现iterator接口)，
+    open：整个循环内容开头的字符串
+     close：整个循环内容结尾的字符串，item取出元素的变量名，index取出元素的索引值，
+     separator：每次循环的分隔符-->
+    <!-- foreach的参考资料：https://my.oschina.net/u/3555887/blog/1838220 -->
+    <select id="selectByIdList" resultType="sysUser" resultMap="userMap">
+        select * from sys_user where id in
+        <foreach collection="list" open="(" close=")" separator="," item="id" index="i">
+            #{id}
+        </foreach>
+    </select>
+
+    <!-- List集合属性值为list，Array集合属性值为array。如果我们指定Map中的value封装集合元素，collection的属性值为Key。
+     如果我们想遍历Map，可以使用@Param或默认值_parameter -->
+    <insert id="insertUserList" useGeneratedKeys="true" keyProperty="id">
+        insert into sys_user(
+        user_name, user_password, user_email,
+        user_info, head_img, create_time
+        )
+        values
+        <foreach collection="list" item="user" separator=",">
+            (
+            #{user.userName}, #{user.userPassword}, #{user.userEmail},
+            #{user.userInfo}, #{user.headImg, jdbcType=BLOB},
+            #{user.createTime, jdbcType=TIMESTAMP}
+            )
+        </foreach>
+    </insert>
+
+    <!-- 此时key为列名，index为值 -->
+    <update id="updateByMap">
+        update sys_user set
+        <foreach collection="_parameter" item="val" index="key" separator=",">
+            ${key} = #{val}
+        </foreach>
+        where id = #{id}
+    </update>
+
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
