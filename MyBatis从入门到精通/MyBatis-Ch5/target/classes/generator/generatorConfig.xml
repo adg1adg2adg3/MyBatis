@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE generatorConfiguration
+        PUBLIC "-//mybatis.org//DTD MyBatis Generator Configuration 1.0//EN"
+        "http://mybatis.org/dtd/mybatis-generator-config_1_0.dtd">
+<generatorConfiguration>
+
+    <!--
+    targetRuntime:指定生成代码的运行时环境，默认值为MyBatis3，
+     MyBatis3Simple与默认值之间的区别在于不生成XXXBySample，为了第二个项目做区分。
+     defaultModelType定义了MGB如何生成实体类，flat：该模型为每一张表只生成一个实体类。
+    -->
+    <context id="MySqlContext" targetRuntime="MyBatis3Simple"
+            defaultModelType="flat">
+        <!-- beginningDelimiter和endingDelimiter：指明数据库的用于标记数据库对象名的符号，
+        比如ORACLE就是双引号，MYSQL默认是`反引号。 -->
+        <property name="beginningDelimiter" value="`"/>
+        <property name="endingDelimiter" value="`"/>
+
+        <!-- 配置生成相关数据库的注释信息，禁止在注释中生成日期 -->
+        <commentGenerator>
+            <property name="suppressDate" value="true"/>
+            <property name="addRemarkComments" value="true"/>
+        </commentGenerator>
+
+        <!-- 简单配置了连接数据库的源信息 -->
+        <jdbcConnection driverClass="com.mysql.cj.jdbc.Driver" connectionURL="jdbc:mysql://localhost:3306/mybatis?
+                        characterEncoding=utf8&amp;zeroDateTimeBehavior=convertToNull&amp;
+                        useSSL=false&amp;serverTimezone=CTT"
+                        userId="root"
+                        password="123456">
+        </jdbcConnection>
+
+        <!-- targetPackage配置生成Model的包名为test.model
+             targetProject配置包生成在哪个路径-->
+        <javaModelGenerator targetPackage="test.model"
+                            targetProject="src\main\java">
+            <property name="trimStrings" value="true"/>
+        </javaModelGenerator>
+
+        <!-- targetPackage配置生成Mapper.xml的包名为test.xml
+             targetProject配置包生成在哪个路径-->
+        <sqlMapGenerator targetPackage="test.xml"
+                         targetProject="src\main\resource"/>
+
+        <!-- 配置生成Mapper接口的位置，Mapper接口的位置，type="XMLMAPPER"即接口与XML完全分离 -->
+        <javaClientGenerator type="XMLMAPPER" targetPackage="test.dao"
+                             targetProject="src\main\java"/>
+
+        <!-- 使用通配符%匹配数据库中所有的表，所有表都有自增主键id字段 -->
+        <table tableName="%">
+            <generatedKey column="id" sqlStatement="MySql"/>
+        </table>
+    </context>
+</generatorConfiguration>
+<!-- 更多详细介绍：https://cloud.tencent.com/developer/article/1474309
+https://blog.csdn.net/Winstin1995/article/details/79679887
+ -->
