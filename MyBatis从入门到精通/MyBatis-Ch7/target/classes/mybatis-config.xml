@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+
+    <!-- 指定使用LOG4J输出日志 -->
+    <settings>
+        <setting name="logImpl" value="LOG4J"/>
+    </settings>
+
+    <!-- 为包内文件起别名 -->
+    <typeAliases>
+        <!-- 别名为包内类名的首字母小写类名 -->
+        <package name="tk.mybatis.domain"/>
+    </typeAliases>
+
+    <!-- 配置数据库连接 -->
+    <environments default="development">
+        <environment id="development">
+            <transactionManager type="JDBC"></transactionManager>
+            <dataSource type="UNPOOLED">
+                <property name="driver" value="com.mysql.cj.jdbc.Driver"/>
+                <property name="url"
+                          value="jdbc:mysql://localhost:3306/mybatis?characterEncoding=utf8&amp;zeroDateTimeBehavior=convertToNull&amp;useSSL=false&amp;serverTimezone=CTT"/>
+                <property name="username" value="root"/>
+                <property name="password" value="123456"/>
+            </dataSource>
+        </environment>
+    </environments>
+
+    <!-- MyBatis可以根据不同的数据库使用Mapper文件中不同的标签，像是<select>
+    这种标签都有databaseId属性以供连接不同的数据库使用。-->
+     <!--<databaseIdProvider type="DB_VENDOR">
+        <property name="数据库名称" value="别名"/>
+    </databaseIdProvider>-->
+    <!-- 也可以使用_databaseId来配合if标签，比如：
+     <insert id="insert">
+        <if test="_databaseId == 'oracle'">
+            select seq_users.nextval from dual
+        </if>
+        <if test="_databaseId == 'db2'">
+            select nextval for seq_users from sysibm.sysdummy1"
+        </if>
+        insert into users values (#{id}, #{name})
+    </insert>-->
+
+    <!-- cacheEnabled:二级缓存的全局开关，默认值为true -->
+<!--    <settings>
+        <setting name="cacheEnabled" value="true"/>
+    </settings>-->
+
+<!--
+    自动转换下划线转驼峰命名方式
+    <settings>
+        <setting name="mapUnderscoreToCamelCase" value="true"/>
+    </settings>
+
+-->
+
+    <!-- 默认参数为true，即使带有延迟加载属性的对象完整加载，false时为按需加载。
+     但是当我们使用equals、clone、hashCode、toString时会触发全部加载-->
+<!--    <settings>
+        <setting name="aggressiveLazyLoading" value="false"/>
+    </settings>-->
+
+    <!-- SQL语句和映射配置 -->
+    <mappers>
+        <!-- 整包配置：这种配置会先查找tk.mybatis.mapper包下的所有接口，并循环对接口进行如下操作 -->
+        <!-- 判断接口命名空间是否重复，如果不重复则以接口全限定类名为路径加载并解析接口对应的XML映射文件， -->
+        <package name="tk.mybatis.mapper"/>
+
+<!--    逐个配置
+        <mapper resource="tk/mybatis/mapper/PrivilegeMapper.xml"/>
+        <mapper resource="tk/mybatis/mapper/RoleMapper.xml"/>
+        <mapper resource="tk/mybatis/mapper/RolePrivilege.xml"/>
+        <mapper resource="tk/mybatis/mapper/UserMapper.xml"/>
+        <mapper resource="tk/mybatis/mapper/UserPrivilege.xml"/>
+        -->
+    </mappers>
+</configuration>
